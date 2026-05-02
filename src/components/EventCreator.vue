@@ -18,8 +18,8 @@ const fetchGroups = async () => {
   try {
     const { data, error: err } = await supabase
       .from('lookup_groups')
-      .select('id, name')
-      .order('name')
+      .select('id, group_name')
+      .order('id')
 
     if (err) throw err
     groups.value = data || []
@@ -44,7 +44,9 @@ const createEvent = async () => {
       .from('events')
       .insert([
         {
+          title: "Test Event",
           group_id: selectedGroup.value.id,
+          category: 'Class',
           start_time: startTime.value.toISOString(),
           end_time: endTime.value.toISOString(),
         }
@@ -80,7 +82,7 @@ onMounted(() => {
         <Select
           v-model="selectedGroup"
           :options="groups"
-          optionLabel="name"
+          optionLabel="group_name"
           placeholder="Select a Group"
           class="w-full"
           id="group"

@@ -1,34 +1,58 @@
-# BSK Admin Dashboard – Project Context
-## 1. Role & Scope
-   * **Purpose:** Centralized "Command Center" for school administrators and lead teachers. 
-   * **Stack:** Vue 3 (Vite), Pinia (State), PrimeVue (UI Components), Supabase JS Client. 
-   * **Primary Goal:** Eliminate manual SQL/Dashboard intervention for event management, attendance auditing, and system configuration.
+## Project Context
+Build a centralized Admin "Command Center" for the **Vidyaa Vihaar (BSK)** system. This portal manages the **Universal Profile** ecosystem, student enrollments, and real-time attendance monitoring for the QR-based scanning app.
 
-## 2. Core Modules & Logic
-### Event Management (Current Priority)
-   * **Test Event Creator:** Ability to instantly generate `events` with `is_test: true` for the 3:15 PM Scripture/Language transition testing. 
-   * **Schedule Generator:** Logic to parse `event_templates` and bulk-insert `events` for a specific Term/Date range. 
-   * **Festival Override:** Functionality to swap a "Language" group event for a "Festival" event while maintaining the same `group_id` for attendance tracking.
+**Tech Stack:** Vue 3 (Composition API), Vite, PrimeVue, Supabase.
 
-### Attendance Intelligence
-* **The "Roll" View:** A real-time monitoring dashboard showing "Expected" vs. "Present" students. 
-* **Inheritance Visualization:** Must distinguish between Verified Presence (Solid Green) and Inherited Presence (Light Green) from back-to-back classes. 
-* **Override Tools:** Ability for Admin to manually toggle attendance status or "Clear" test data for re-scanning.
+## 1. Core Data Directives
+*   **Single Source of Truth:** All operations must target the `profiles` table. Use the `role` and `status` columns to differentiate between Students, Teachers, and Volunteers.
+*   **Scan Integrity:** The `scan_log` table is append-only. Never allow the Admin UI to delete or edit a `scan_log` entry, except through the "Cleanup" utility (see Tools).
+*   **Privacy:** Ensure **RLS (Row Level Security)** is respected. Admin actions should be performed via a service role or a high-privileged `admin` auth role.
 
-### Membership & Relations
-* **The Family Map:** UI to link `profiles` via `profile_relations` (Parent-Child) and assign them to `lookup_groups`. 
-* **Role Management:** Admin-only permission to flip `role` tags (TEACHER, PARENT) and `is_active` status.
+## 2. Feature Specifications
 
-## 3. Backend Integration (Supabase)
-   * **Client:** Uses `supabase-js`. No custom API layer. 
-   * **Security:** Authenticated via Supabase Auth. Permissions are enforced via PostgreSQL RLS based on the `profiles.role` column. 
-   * **Environment:** Points to the `UAT` project during dev and `PROD` for the May 3rd release.
+### A. Profile Search & Management
+*   **Search Engine:** Implement a global search across `first_name`, `last_name`, `email`, and `phone`. (Status: Basic Search implemented in `ProfileSearch.vue`).
+*   **Universal Profile View:** A slide-over or modal showing the user's full history, assigned classes, and QR code status.
 
-## 4. UI/UX Standards
-   * **Performance:** Focus on high-density data tables (PrimeVue `DataTable`) with global filtering. 
-   * **Responsiveness:** Must be usable on a laptop at the school hall (admin desk). 
-   * **State:** Pinia stores for `auth`, `activeEvents`, and `lookups` to minimize redundant API calls.
+### B. Student Admissions
+*   **Workflow:** UI to move profiles from `pending` or `prospect` status to `active_student`.
+*   **Class Assignment:** Dropdown to link a student profile to a specific `group_id` (from `lookup_groups`) or `grade_level`.
 
-## 5. Development Constraints
-   * **No Direct Schema Changes:** The Dashboard only performs DML (Data Manipulation). All DDL (Table changes) must be done via Supabase CLI migrations in the backend repo. 
-   * **Cleanup:** Include a "Developer Mode" toggle to wipe all data where `is_test = true`.
+### C. Class & Resource Allocation
+*   **The Grid:** A view of all active classes/groups.
+*   **Assigner:** UI to assign **Teachers** and **Volunteers** to specific groups or school wings.
+
+### D. Real-Time Monitor (The "War Room")
+*   **Live Stream:** A PrimeVue `DataTable` or `Timeline` component that listens to `INSERT` events on the `scan_log` table via Supabase Realtime.
+*   **Visual Cues:** Flash green for successful scans, red for failures (e.g., "Already Scanned" or "Invalid Profile").
+
+### E. Attendance Analytics
+*   **Hierarchical Filters:** View attendance data filtered by:
+    1.  **Date Range**
+    2.  **Group** (e.g., Level 1, Level 2 via `lookup_groups`)
+    3.  **Event Type** (from `events` table)
+*   **Aggregation:** Display "Total Present vs. Total Enrolled" percentages for the selected group.
+
+## 3. System Admin Tools
+*   **Test Event Generator:**
+    *   Create entries in the `events` table. (Status: `EventCreator.vue` implemented for manual entry).
+    *   *Requirement:* Ensure test events are marked with an `is_test: true` flag.
+    *   Ability to simulate bulk scans to verify dashboard load performance.
+*   **Cleanup Utility:**
+    *   A "Purge Test Data" button that executes a Supabase RPC to delete all `scan_log` and `event` entries where `is_test = true`.
+
+## 4. UI/UX Guidelines (PrimeVue)
+*   **Layout:** Sidebar navigation with a "Live Status" indicator in the top header.
+*   **Components:**
+    *   `DataTable` for all lists (enable `removableSort` and `filterDisplay="menu"`).
+    *   `Toast` notifications for every database write action.
+    *   `Skeleton` loaders for initial Supabase fetches.
+*   **Theme:** Aura theme with Blue/Indigo palette.
+
+## 5. Development Steps for Agent
+1.  **Phase 1:** Setup Supabase Client and Auth (Status: Client configured in `supabase.js`).
+2.  **Phase 2:** Profile Search and Event Management (Status: `ProfileSearch.vue` and `EventCreator.vue` functional).
+3.  **Phase 3:** Create Dashboard Layout with Sidebar and integrate existing components into `App.vue`.
+4.  **Phase 4:** Implement Real-time `scan_log` subscription for the "War Room".
+5.  **Phase 5:** Build Class/Group Allocation logic and Analytics views.
+6.  **Phase 6:** Refine Test/Cleanup tools (Add `is_test` support).

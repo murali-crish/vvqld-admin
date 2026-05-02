@@ -1,4 +1,5 @@
 <script setup>
+import ProfileSearch from './components/ProfileSearch.vue'
 import EventCreator from './components/EventCreator.vue'
 </script>
 
@@ -12,6 +13,7 @@ import EventCreator from './components/EventCreator.vue'
 
   <main class="p-8">
     <div class="max-w-7xl mx-auto">
+      <ProfileSearch />
       <EventCreator />
     </div>
   </main>
