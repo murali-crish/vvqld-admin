@@ -25,7 +25,7 @@ const handleSearch = async () => {
     const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, phone')
-      .ilike('phone', `%${query}%`)
+      .ilike('search_term', `%${query}%`)
       .limit(5)
 
     if (error) {
